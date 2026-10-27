@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulator Insentif AO, SAO, KUM & FAO</title>
+<style>
+:root{--navy:#17324d;--blue:#2463eb;--bg:#f3f6fb;--line:#dbe3ef;--text:#1e293b;--muted:#64748b;--green:#15803d}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 "Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(120deg,#17324d,#2456a6);color:white;padding:24px clamp(16px,4vw,42px)}
+header h1{margin:0 0 6px;font-size:clamp(22px,3vw,30px)}header p{margin:0;color:#dbeafe}
+main{max-width:1600px;margin:auto;padding:22px clamp(12px,2vw,28px) 40px}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 4px 14px #0f172a08}
+h2{font-size:18px;margin:0 0 14px;color:var(--navy)}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.field{display:flex;flex-direction:column;gap:5px;min-width:150px;flex:1}.field label{font-size:12px;color:var(--muted);font-weight:700}
+input,select{width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;background:white;min-width:90px}
+button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;font:inherit}
+.primary{background:var(--blue);color:white}.secondary{background:#e8eef8;color:#17324d}.danger{background:#fee2e2;color:#991b1b}.success{background:#dcfce7;color:#166534}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px}.card{background:white;border:1px solid var(--line);border-radius:12px;padding:15px}.card small{color:var(--muted);display:block;margin-bottom:7px}.card strong{font-size:22px;color:var(--navy);word-break:break-word}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;min-width:1250px;background:white}th,td{padding:9px 10px;border-bottom:1px solid #e8edf5;text-align:right;white-space:nowrap}th{background:#edf3fb;color:#334155;font-size:12px;position:sticky;top:0;z-index:1}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}td input,td select{min-width:105px;padding:7px}td.name input{min-width:180px}.money{font-variant-numeric:tabular-nums}.left{text-align:left}.muted{color:var(--muted)}.status{font-weight:700}.pill{display:inline-block;border-radius:99px;padding:3px 8px;font-size:12px;background:#e2e8f0}.pill.yes{background:#dcfce7;color:#166534}.pill.no{background:#fee2e2;color:#991b1b}
+.summarygrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.summarybox{border:1px solid var(--line);border-radius:10px;padding:13px}.summarybox h3{margin:0 0 8px;font-size:14px;color:var(--navy)}.summarybox .big{font-size:20px;font-weight:800}.summarybox p{margin:5px 0;color:var(--muted);font-size:12px}
+.note{background:#fffbeb;border:1px solid #fde68a;color:#854d0e;padding:12px;border-radius:10px;font-size:13px}.foot{font-size:12px;color:var(--muted);margin-top:10px}
+@media(max-width:700px){header{padding:20px 16px}main{padding:12px}.panel{padding:13px}.toolbar .field{min-width:130px}}
+@media print{body{background:white}header{background:white;color:#111;padding:0 0 15px}header p{color:#333}main{padding:0;max-width:none}.panel,.card{box-shadow:none;break-inside:avoid}.no-print,button{display:none!important}.tablewrap{overflow:visible}table{min-width:0;font-size:9px}th,td{padding:4px}td input,td select{border:0;padding:0;min-width:0}.cards{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header><h1>Kalkulator Insentif AO, SAO, KUM & FAO</h1><p>Perhitungan insentif kelolaan, lending, serta insentif jabatan berdasarkan workbook Excel.</p></header>
+<main>
+<section class="panel no-print">
+<h2>Pengaturan Unit</h2>
+<div class="toolbar">
+<div class="field"><label>Nama Unit</label><input id="unit" value="Nama Unit"></div>
+<div class="field"><label>Periode</label><input id="periode" type="month"></div>
+<div class="field"><label>Persentase insentif kelolaan</label><input id="rateKelolaan" type="number" min="0" step="0.001" value="2"></div>
+<div class="field"><label>Persentase insentif lending</label><input id="rateLending" type="number" min="0" step="0.001" value="0.05"></div>
+<div class="field"><label>Minimum lending (Rp)</label><input id="minLending" type="number" min="0" step="1000000" value="100000000"></div>
+<div class="field"><label>Batas FPD (%)</label><input id="maxFpd" type="number" min="0" step="0.1" value="2"></div>
+</div>
+<div class="toolbar" style="margin-top:14px">
+<button class="primary" onclick="addRow()">＋ Tambah AO</button>
+<button class="secondary" onclick="recalculate()">Hitung Ulang</button>
+<button class="secondary" onclick="exportCSV()">Ekspor CSV</button>
+<button class="secondary" onclick="window.print()">Cetak / Simpan PDF</button>
+<button class="danger" onclick="resetRows()">Reset Data</button>
+<label class="secondary" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Impor CSV <input id="importFile" type="file" accept=".csv,text/csv" style="display:none" onchange="importCSV(event)"></label>
+</div>
+</section>
+<div class="cards">
+<div class="card"><small>Total Insentif Kelolaan</small><strong id="totalKelolaan">Rp0</strong></div>
+<div class="card"><small>Total Insentif Lending</small><strong id="totalLending">Rp0</strong></div>
+<div class="card"><small>Total Insentif AO</small><strong id="totalAO">Rp0</strong></div>
+<div class="card"><small>Total Insentif Unit (termasuk jabatan)</small><strong id="totalUnit">Rp0</strong></div>
+</div>
+<section class="panel">
+<h2>Data AO dan Perhitungan</h2>
+<p class="muted">Isi data awal bulan, realisasi akhir bulan, flow, lending, dan FPD. Kolom proyeksi dan hasil dihitung otomatis.</p>
+<div class="tablewrap"><table id="aoTable">
+<thead><tr>
+<th>Jabatan</th><th>Nama AO</th><th>NOA Kol 1A Awal</th><th>OS Pokok Awal (Rp)</th><th>Angsuran Bunga/Minggu (Rp)</th><th>Proyeksi Kelolaan/Bulan (Rp)</th><th>Lending (Rp)</th><th>Proyeksi Lending (Rp)</th><th>Flow (Rp)</th><th>% Flow</th><th>Insentif Kelolaan (Rp)</th><th>NOA EOM</th><th>OS EOM (Rp)</th><th>FPD (Rp)</th><th>% FPD</th><th>Status Lending</th><th>Insentif Lending (Rp)</th><th>Total Insentif AO (Rp)</th><th>Aksi</th>
+</tr></thead><tbody id="aoBody"></tbody></table></div>
+<div class="foot">Formula: proyeksi kelolaan = angsuran bunga/minggu × persentase kelolaan × 4. Penyesuaian flow: ≤0,2% = 100%; ≤0,3% = 50%; ≤0,4% = 25%; >0,4% = 0%.</div>
+</section>
+<section class="panel">
+<h2>Insentif Jabatan dan Total Unit</h2>
+<div class="summarygrid" id="roleSummary"></div>
+<div class="foot">Insentif jabatan mengikuti persentase AO penerima insentif: <50% = 0%; 50% sampai 75% = 50%; >75% sampai <100% = 75%; 100% = 100%. Jumlah nominal KUM, SAO, FAO dapat disesuaikan.</div>
+</section>
+<section class="panel no-print">
+<h2>Pengaturan Insentif Jabatan</h2>
+<div class="toolbar">
+<div class="field"><label>Insentif KUM (Rp)</label><input id="kumRate" type="number" value="1000000" min="0" step="50000" oninput="recalculate()"></div>
+<div class="field"><label>Insentif SAO (Rp)</label><input id="saoRate" type="number" value="1000000" min="0" step="50000" oninput="recalculate()"></div>
+<div class="field"><label>Insentif FAO (Rp)</label><input id="faoRate" type="number" value="750000" min="0" step="50000" oninput="recalculate()"></div>
+<div class="field"><label>Jumlah FAO dalam komposisi SDM</label><input id="faoCount" type="number" value="1" min="0" step="1" oninput="recalculate()"></div>
+</div>
+</section>
+<section class="panel">
+<h2>Catatan Aturan Tambahan Excel (22 Oktober 2026)</h2>
+<div class="note">Workbook mencantumkan bonus serapan JT, bonus pencairan CLBK/S1, dan insentif deskcall FAO. Namun rincian perhitungan belum sepenuhnya terdefinisi di lembar Excel. Karena itu bonus tersebut belum dimasukkan ke total otomatis agar tidak menghasilkan angka yang keliru. Bagian ini dapat ditambahkan setelah aturan dan basis perhitungannya dikonfirmasi.</div>
+</section>
+</main>
+<script>
+const initialRows = [
+{role:'SAO 1',name:'Adam Romadhon',noa:274,os:1073743139,angsuran:9306968,lending:200000000,flow:5000000,noaEom:280,osEom:1083743139,fpd:3000000},
+{role:'SAO 1',name:'Ahmad Edi Saputro',noa:312,os:1183521062,angsuran:10821827,lending:100000000,flow:3000000,noaEom:312,osEom:1183521062,fpd:0},
+{role:'SAO 1',name:'Devy Dwi Wahyu Ningtyas',noa:283,os:1068773707,angsuran:8883087,lending:200000000,flow:2000000,noaEom:284,osEom:1170773707,fpd:4000000},
+{role:'SAO 1',name:'Dwi Anggraini',noa:295,os:1164364499,angsuran:10420001,lending:150000000,flow:4000000,noaEom:290,osEom:1164364499,fpd:6000000},
+{role:'SAO 2',name:'Hafidz Affandi',noa:214,os:861578384,angsuran:7414761,lending:300000000,flow:1000000,noaEom:214,osEom:861578384,fpd:6000000},
+{role:'SAO 2',name:"Khoirun Nisa' Indra Syafana",noa:280,os:1079606458,angsuran:9193310,lending:90000000,flow:3500000,noaEom:280,osEom:1079606458,fpd:0},
+{role:'SAO 2',name:'Siti Masrifa',noa:265,os:928148373,angsuran:8165315,lending:100000000,flow:2000000,noaEom:200,osEom:908148373,fpd:0}
+];
+let rows=initialRows.map(x=>({...x}));
+const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
+const num=n=>Number(n)||0;
+const pct=n=>(num(n)*100).toLocaleString('id-ID',{maximumFractionDigits:2})+'%';
+function roleOptions(v){return ['AO','SAO 1','SAO 2','KUM','FAO 1','FAO 2'].map(r=>`<option ${r===v?'selected':''}>${r}</option>`).join('')}
+function addRow(data={role:'AO',name:'',noa:0,os:0,angsuran:0,lending:0,flow:0,noaEom:0,osEom:0,fpd:0}){rows.push({...data});renderRows();recalculate()}
+function resetRows(){if(confirm('Hapus data saat ini dan mulai dari data kosong?')){rows=[];renderRows();recalculate()}}
+function update(i,k,v){rows[i][k]=k==='name'||k==='role'?v:num(v);recalculate()}
+function renderRows(){document.getElementById('aoBody').innerHTML=rows.map((r,i)=>`<tr>
+<td><select onchange="update(${i},'role',this.value)">${roleOptions(r.role)}</select></td>
+<td class="name"><input value="${esc(r.name)}" onchange="update(${i},'name',this.value)"></td>
+${[['noa','number'],['os','number'],['angsuran','number']].map(([k,t])=>`<td><input type="number" min="0" value="${num(r[k])}" onchange="update(${i},'${k}',this.value)"></td>`).join('')}
+<td id="g${i}" class="money">—</td>
+<td><input type="number" min="0" value="${num(r.lending)}" onchange="update(${i},'lending',this.value)"></td><td id="i${i}" class="money">—</td>
+<td><input type="number" min="0" value="${num(r.flow)}" onchange="update(${i},'flow',this.value)"></td><td id="l${i}" class="money">—</td><td id="n${i}" class="money">—</td>
+<td><input type="number" min="0" value="${num(r.noaEom)}" onchange="update(${i},'noaEom',this.value)"></td>
+<td><input type="number" min="0" value="${num(r.osEom)}" onchange="update(${i},'osEom',this.value)"></td>
+<td><input type="number" min="0" value="${num(r.fpd)}" onchange="update(${i},'fpd',this.value)"></td><td id="r${i}" class="money">—</td><td id="s${i}">—</td><td id="t${i}" class="money">—</td><td id="u${i}" class="money">—</td>
+<td><button class="danger" onclick="rows.splice(${i},1);renderRows();recalculate()">Hapus</button></td></tr>`).join('')}
+function esc(s){return String(s??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+function flowFactor(flowPct){return flowPct<=.002?1:flowPct<=.003?.5:flowPct<=.004?.25:0}
+function roleFactor(ratio){return ratio<.5?0:ratio<=.75?.5:ratio<1?.75:ratio===1?1:0}
+function recalculate(){
+ const kelRate=num(document.getElementById('rateKelolaan').value)/100, lendRate=num(document.getElementById('rateLending').value)/100, minL=num(document.getElementById('minLending').value), maxF=num(document.getElementById('maxFpd').value)/100;
+ let sumKel=0,sumLend=0,sumAO=0;
+ rows.forEach((r,i)=>{
+  const projKel=num(r.angsuran)*kelRate*4, fp=num(r.os)?num(r.flow)/num(r.os):0, adj=flowFactor(fp), earnedKel=projKel*adj;
+  const projLend=num(r.lending)>=minL?num(r.lending)*lendRate:0, fpd=num(r.lending)>0?num(r.fpd)/num(r.lending): (num(r.fpd)>0?Infinity:0);
+  const eligible=num(r.lending)>=minL && num(r.noaEom)>=num(r.noa) && num(r.osEom)>=num(r.os) && fpd<=maxF;
+  const earnedLend=eligible?projLend:0,total=earnedKel+earnedLend;
+  sumKel+=earnedKel;sumLend+=earnedLend;sumAO+=total;
+  const set=(id,val)=>{let e=document.getElementById(id+i);if(e)e.textContent=val};
+  set('g',rupiah(projKel));set('i',rupiah(projLend));set('l',pct(fp));set('n',pct(adj));set('r',Number.isFinite(fpd)?pct(fpd):'∞');set('s',`<span class="pill ${eligible?'yes':'no'}">${eligible?'Dapat':'Tidak'}</span>`);set('t',rupiah(earnedLend));set('u',rupiah(total));
+  // status is rendered as HTML
+  const st=document.getElementById('s'+i); if(st) st.innerHTML=`<span class="pill ${eligible?'yes':'no'}">${eligible?'Dapat':'Tidak'}</span>`;
+ });
+ document.getElementById('totalKelolaan').textContent=rupiah(sumKel);document.getElementById('totalLending').textContent=rupiah(sumLend);document.getElementById('totalAO').textContent=rupiah(sumAO);
+ const roleDefs=[
+  {name:'KUM',rate:num(document.getElementById('kumRate').value),count:1,eligible:rows.filter(r=>r.role.startsWith('SAO')||r.role==='AO').filter(r=>calcTotal(r)>0).length},
+  {name:'SAO 1',rate:num(document.getElementById('saoRate').value),count:rows.filter(r=>r.role==='SAO 1').length,eligible:rows.filter(r=>r.role==='SAO 1'&&calcTotal(r)>0).length},
+  {name:'SAO 2',rate:num(document.getElementById('saoRate').value),count:rows.filter(r=>r.role==='SAO 2').length,eligible:rows.filter(r=>r.role==='SAO 2'&&calcTotal(r)>0).length},
+  {name:'FAO',rate:num(document.getElementById('faoRate').value),count:num(document.getElementById('faoCount').value),eligible:rows.filter(r=>(r.role==='FAO 1'||r.role==='FAO 2')&&calcTotal(r)>0).length}
+ ];
+ let roleTotal=0; const summary=[];
+ roleDefs.forEach(d=>{const ratio=d.count?Math.min(d.eligible/d.count,1):0;const factor=roleFactor(ratio);const earned=d.rate*factor;roleTotal+=earned;summary.push(`<div class="summarybox"><h3>${d.name}</h3><div class="big">${rupiah(earned)}</div><p>Penerima: ${d.eligible} / komposisi: ${d.count}</p><p>Persentase penerima: ${pct(ratio)} · Faktor: ${pct(factor)}</p><p>Nominal penuh: ${rupiah(d.rate)}</p></div>`)});
+ document.getElementById('roleSummary').innerHTML=summary.join('')+`<div class="summarybox"><h3>Total Insentif Jabatan</h3><div class="big">${rupiah(roleTotal)}</div><p>Perhitungan dari parameter jabatan di atas.</p></div>`;
+ document.getElementById('totalUnit').textContent=rupiah(sumAO+roleTotal);
+}
+function calcTotal(r){const kel=num(r.angsuran)*(num(document.getElementById('rateKelolaan').value)/100)*4*flowFactor(num(r.os)?num(r.flow)/num(r.os):0);const l=num(r.lending),fpd=l?num(r.fpd)/l:(num(r.fpd)>0?Infinity:0);const lend=l>=num(document.getElementById('minLending').value)&&num(r.noaEom)>=num(r.noa)&&num(r.osEom)>=num(r.os)&&fpd<=num(document.getElementById('maxFpd').value)/100?l*num(document.getElementById('rateLending').value)/100:0;return kel+lend}
+function exportCSV(){const headers=['Jabatan','Nama AO','NOA Awal','OS Awal','Angsuran Bunga/Minggu','Lending','Flow','NOA EOM','OS EOM','FPD'];const lines=[headers,...rows.map(r=>[r.role,r.name,r.noa,r.os,r.angsuran,r.lending,r.flow,r.noaEom,r.osEom,r.fpd])].map(row=>row.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+lines],{type:'text/csv;charset=utf-8;'}));a.download='data-insentif-ao.csv';a.click();URL.revokeObjectURL(a.href)}
+function importCSV(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{const lines=String(reader.result).replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean);const parsed=lines.slice(1).map(line=>{const a=line.match(/("(?:[^"]|"")*"|[^,]*)(,|$)/g)||[];const v=a.map(x=>x.replace(/,$/,'').replace(/^"|"$/g,'').replaceAll('""','"'));return {role:v[0]||'AO',name:v[1]||'',noa:num(v[2]),os:num(v[3]),angsuran:num(v[4]),lending:num(v[5]),flow:num(v[6]),noaEom:num(v[7]),osEom:num(v[8]),fpd:num(v[9])}});rows=parsed;renderRows();recalculate();e.target.value=''};reader.readAsText(f)}
+document.querySelectorAll('#unit,#periode,#rateKelolaan,#rateLending,#minLending,#maxFpd').forEach(e=>e.addEventListener('input',recalculate));
+document.getElementById('faoCount').addEventListener('input',recalculate);
+renderRows();recalculate();
+</script>
+</body>
+</html>
